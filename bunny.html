@@ -177,9 +177,13 @@
     </div>
     <div class="tabs" id="tabs" role="tablist" aria-label="Clothing type"></div>
     <div class="chips" id="items" role="tabpanel"></div>
-    <div class="group">
+    <div class="group" id="outfit-color-group">
       <span class="label">Outfit color</span>
       <div class="swatches" id="color"></div>
+    </div>
+    <div class="group" id="shoe-color-group" hidden>
+      <span class="label">Shoe color</span>
+      <div class="swatches" id="shoeColor"></div>
     </div>
   </section>
 
@@ -234,7 +238,15 @@
       { id: "boots", name: "Rain boots" },
     ] },
   ];
-  const DEFAULTS = { fur: "chocolate", color: "rose", outfit: "apron", hat: "none", extra: "none", shoes: "none" };
+  const SHOE_COLORS = [
+    { id: "cherry", name: "Cherry", color: 0x9b2335 },
+    { id: "black",  name: "Black",  color: 0x2b2527 },
+    { id: "navy",   name: "Navy",   color: 0x2f3f66 },
+    { id: "pink",   name: "Pink",   color: 0xe58fa6 },
+    { id: "sunny",  name: "Sunny",  color: 0xf2c230 },
+    { id: "white",  name: "White",  color: 0xf4f0ea },
+  ];
+  const DEFAULTS = { fur: "chocolate", color: "rose", shoeColor: "cherry", outfit: "apron", hat: "none", extra: "none", shoes: "none" };
   const STORE_KEY = "clover-closet";
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const PI = Math.PI;
@@ -348,8 +360,8 @@
     bagFlap: plastic(0x84532f, 0.7),
     frame: plastic(0x3b2a22, 0.35),
     lens: plastic(0xdff0ff, 0.05, { transparent: true, opacity: 0.22 }),
-    patent: plastic(0x7a1f2b, 0.22),
-    boot: plastic(0xf2c230, 0.3),
+    patent: plastic(SHOE_COLORS[0].color, 0.22),
+    boot: plastic(SHOE_COLORS[0].color, 0.38),
   };
   Object.values(mat).forEach((m) => m.color.convertSRGBToLinear());
 
@@ -366,6 +378,14 @@
     return m;
   }
   const blob = (material, pos, scale, parent, rot) => add(sphere, material, parent, pos, rot, scale);
+  // A thin cylinder from point a to point b.
+  function rod(material, parent, a, b, r) {
+    const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
+    const m = add(new THREE.CylinderGeometry(r, r, A.distanceTo(B), 8), material, parent);
+    m.position.copy(A).add(B).multiplyScalar(0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.sub(A).normalize());
+    return m;
+  }
   const torus = (r, tube) => new THREE.TorusGeometry(r, tube, 14, 72);
   const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
   const lathe = (profile, ...rest) =>
@@ -759,9 +779,10 @@
   // Extras
   {
     const g = piece("extra", "scarf");
-    add(torus(0.23, 0.075), mat.knit, g, [0, 1.4, 0], [PI / 2, 0, 0], [1, 1, 0.6]);
-    blob(mat.knit, [0.13, 1.21, 0.28], [0.075, 0.17, 0.04], g, [0.25, 0, -0.18]);
-    blob(mat.knit, [0.05, 1.24, 0.29], [0.07, 0.15, 0.04], g, [0.25, 0, 0.12]);
+    add(torus(0.3, 0.085), mat.knit, g, [0, 1.37, 0.02], [PI / 2, 0, 0], [1, 1, 0.78]);
+    blob(mat.knit, [0.16, 1.17, 0.37], [0.08, 0.17, 0.04], g, [0.2, 0, -0.18]);
+    blob(mat.knit, [0.07, 1.2, 0.38], [0.075, 0.15, 0.04], g, [0.2, 0, 0.12]);
+    blob(mat.knit, [0.12, 1.33, 0.33], [0.07, 0.06, 0.05], g);
   }
   {
     const g = piece("extra", "bag");
@@ -783,22 +804,45 @@
     for (const s of [-1, 1]) {
       add(torus(0.085, 0.012), mat.frame, g, [s * 0.19, 0.03, EYE_Z + 0.075]);
       add(new THREE.CircleGeometry(0.085, 32), mat.lens, g, [s * 0.19, 0.03, EYE_Z + 0.073]);
-      add(box(0.018, 0.018, 0.32), mat.frame, g, [s * 0.31, 0.045, EYE_Z - 0.08], [0, s * -0.6, 0]);
+      // Arms run from the frame's outer edge back along the side of the head.
+      rod(mat.frame, g, [s * 0.275, 0.04, EYE_Z + 0.07], [s * 0.425, 0.055, 0.17], 0.011);
+      rod(mat.frame, g, [s * 0.425, 0.055, 0.17], [s * 0.44, 0.06, -0.04], 0.011);
     }
     add(new THREE.CylinderGeometry(0.011, 0.011, 0.2, 8), mat.frame, g, [0, 0.06, EYE_Z + 0.08], [0, 0, PI / 2]);
   }
 
-  // Shoes
-  [-1, 1].forEach((s, i) => {
-    const mj = piece("shoes", "maryjanes", feet[i]);
-    blob(mat.patent, [0, 0.08, 0.02], [0.148, 0.1, 0.27], mj);
-    blob(mat.ribbon, [0, 0.16, 0.17], [0.04, 0.025, 0.02], mj);
+  // Shoes are sculpted in foot-local coords (foot: center (0, 0.08, 0.02), radii 0.13 × 0.085 × 0.25;
+  // the leg rises from about (0, 0.1, -0.09)). Both feet share one mesh per shoe.
+  {
+    const ring = (x, y, z, cy, cz, r, tube) => Math.hypot(Math.hypot(x, z - cz) - r, y - cy) - tube;
+    const flatSole = (d, y) => smax(d, -y, 0.012);
 
-    const boot = piece("shoes", "boots");
-    blob(mat.boot, [0, 0.08, 0.02], [0.148, 0.1, 0.27], piece("shoes", "boots", feet[i]));
-    add(new THREE.CylinderGeometry(0.19, 0.18, 0.32, 32), mat.boot, boot, [s * 0.16, 0.3, 0]);
-    add(torus(0.19, 0.022), mat.boot, boot, [s * 0.16, 0.46, 0], [PI / 2, 0, 0]);
-  });
+    const maryJaneSDF = (x, y, z) => {
+      let d = ell(x, y, z, 0, 0.08, 0.025, 0.153, 0.098, 0.278);
+      d = smax(d, -ell(x, y, z, 0, 0.178, -0.03, 0.105, 0.08, 0.19), 0.02);
+      d = smin(d, ell(x, y, z, 0, 0.022, 0.03, 0.162, 0.026, 0.29), 0.01);
+      const strap = Math.min(
+        limb(x, y, z, [-0.135, 0.1, 0], [0, 0.18, 0], 0.017, 0.017),
+        limb(x, y, z, [0, 0.18, 0], [0.135, 0.1, 0], 0.017, 0.017));
+      return flatSole(smin(d, strap, 0.01), y);
+    };
+    const bootSDF = (x, y, z) => {
+      let d = ell(x, y, z, 0, 0.085, 0.03, 0.158, 0.105, 0.285);
+      d = smin(d, limb(x, y, z, [0, 0.1, -0.09], [0, 0.46, -0.1], 0.168, 0.176), 0.08);
+      d = smin(d, ring(x, y, z, 0.46, -0.1, 0.178, 0.024), 0.015);
+      d = smax(d, -ell(x, y, z, 0, 0.52, -0.1, 0.15, 0.06, 0.15), 0.01);
+      d = smin(d, ell(x, y, z, 0, 0.024, 0.03, 0.168, 0.028, 0.298), 0.01);
+      return flatSole(d, y);
+    };
+    const maryJaneGeo = meshSDF(maryJaneSDF, [-0.2, -0.03, -0.3], [0.2, 0.22, 0.34], 0.008);
+    const bootGeo = meshSDF(bootSDF, [-0.24, -0.03, -0.32], [0.24, 0.52, 0.36], 0.01);
+    [-1, 1].forEach((s, i) => {
+      const mj = piece("shoes", "maryjanes", feet[i]);
+      add(maryJaneGeo, mat.patent, mj);
+      add(new THREE.SphereGeometry(0.02, 12, 8), mat.button, mj, [s * 0.137, 0.1, 0]);
+      add(bootGeo, mat.boot, piece("shoes", "boots", feet[i]));
+    });
+  }
 
   // ---------- State ----------
   function loadState() {
@@ -821,6 +865,9 @@
     furMats.forEach((m) => { m.sheen.copy(sheen); });
     paintFur();
     setColor(mat.dress, (COLORS.find((c) => c.id === state.color) || COLORS[0]).color);
+    const shoeHex = (SHOE_COLORS.find((c) => c.id === state.shoeColor) || SHOE_COLORS[0]).color;
+    setColor(mat.patent, shoeHex);
+    setColor(mat.boot, shoeHex);
     for (const [slot, items] of Object.entries(wardrobe)) {
       for (const [id, groups] of Object.entries(items)) groups.forEach((g) => { g.visible = state[slot] === id; });
     }
@@ -848,6 +895,7 @@
   }
   swatches(document.getElementById("fur"), FURS, (f) => f.fur, "fur");
   swatches(document.getElementById("color"), COLORS, (c) => c.color, "color");
+  swatches(document.getElementById("shoeColor"), SHOE_COLORS, (c) => c.color, "shoeColor");
 
   const tabsEl = document.getElementById("tabs");
   const itemsEl = document.getElementById("items");
@@ -891,6 +939,10 @@
   function syncUI() {
     document.querySelectorAll("#fur .swatch").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state.fur)));
     document.querySelectorAll("#color .swatch").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state.color)));
+    document.querySelectorAll("#shoeColor .swatch").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state.shoeColor)));
+    // The color row follows the tab: shoe colors on Shoes, outfit colors everywhere else.
+    document.getElementById("shoe-color-group").hidden = activeTab !== "shoes";
+    document.getElementById("outfit-color-group").hidden = activeTab === "shoes";
     tabsEl.querySelectorAll(".tab").forEach((t) => {
       const on = t.id === `tab-${activeTab}`;
       t.setAttribute("aria-selected", String(on));
@@ -903,6 +955,7 @@
   document.getElementById("surprise").addEventListener("click", () => {
     for (const cat of CLOSET) state[cat.slot] = pick(cat.items).id;
     state.color = pick(COLORS).id;
+    state.shoeColor = pick(SHOE_COLORS).id;
     dress();
   });
 
