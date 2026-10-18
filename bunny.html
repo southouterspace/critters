@@ -3,15 +3,16 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700&display=swap">
 <style>
-  /* Layout: full-bleed 3D stage, one small floating control card (top-left on desktop, bottom on phones). */
+  /* Layout: full-bleed 3D stage, one floating closet card (left on desktop, bottom sheet on phones). */
   :root {
     --bg: #e4ece2;
     --bg-glow: #f6f8f1;
     --fg: #2f3a2f;
     --muted: #66735f;
-    --card: rgba(255, 255, 255, 0.78);
+    --card: rgba(255, 255, 255, 0.8);
     --line: rgba(47, 58, 47, 0.14);
     --accent: #c4566c;
+    --on-accent: #ffffff;
     --ring: #2f3a2f;
     --font-display: "Fredoka", "Nunito", ui-rounded, system-ui, sans-serif;
     --font-body: "Nunito", ui-rounded, system-ui, -apple-system, sans-serif;
@@ -19,19 +20,19 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #1b231d; --bg-glow: #2b3a2e; --fg: #eef3ea; --muted: #a6b4a0;
-      --card: rgba(30, 40, 32, 0.8); --line: rgba(238, 243, 234, 0.14);
-      --accent: #ec8fa1; --ring: #eef3ea; color-scheme: dark;
+      --card: rgba(30, 40, 32, 0.82); --line: rgba(238, 243, 234, 0.14);
+      --accent: #ec8fa1; --on-accent: #2a1218; --ring: #eef3ea; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #1b231d; --bg-glow: #2b3a2e; --fg: #eef3ea; --muted: #a6b4a0;
-    --card: rgba(30, 40, 32, 0.8); --line: rgba(238, 243, 234, 0.14);
-    --accent: #ec8fa1; --ring: #eef3ea; color-scheme: dark;
+    --card: rgba(30, 40, 32, 0.82); --line: rgba(238, 243, 234, 0.14);
+    --accent: #ec8fa1; --on-accent: #2a1218; --ring: #eef3ea; color-scheme: dark;
   }
 
   html, body { height: 100%; }
   body {
-    background: radial-gradient(ellipse at 50% 40%, var(--bg-glow), var(--bg) 70%);
+    background: radial-gradient(ellipse at 55% 40%, var(--bg-glow), var(--bg) 70%);
     background-color: var(--bg);
     color: var(--fg);
     font-family: var(--font-body);
@@ -45,9 +46,11 @@
     position: fixed;
     top: calc(16px + env(safe-area-inset-top, 0px));
     left: max(16px, env(safe-area-inset-left, 0px));
-    width: min(280px, calc(100vw - 32px));
+    width: min(300px, calc(100vw - 32px));
+    max-height: calc(100% - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
     display: grid;
-    gap: 14px;
+    gap: 16px;
     padding: 18px;
     background: var(--card);
     border: 1px solid var(--line);
@@ -83,6 +86,46 @@
   }
   .swatch:hover { transform: scale(1.08); }
   .swatch[aria-pressed="true"] { border-color: var(--ring); box-shadow: 0 0 0 2px var(--bg-glow) inset; }
+
+  .closet {
+    display: grid;
+    gap: 12px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+  .closet-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .closet-head h2 { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+  .link {
+    font: 700 0.8rem/1 var(--font-body);
+    color: var(--accent);
+    background: none; border: 0; padding: 4px 0; cursor: pointer;
+  }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+  .tab {
+    flex: 1;
+    font: 700 0.8rem/1 var(--font-body);
+    color: var(--muted);
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 8px 2px 9px;
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font: 600 0.85rem/1 var(--font-body);
+    color: var(--fg);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--fg); }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
   .actions { display: flex; gap: 8px; }
   .btn {
     flex: 1;
@@ -95,22 +138,22 @@
     cursor: pointer;
   }
   .btn:hover { border-color: var(--fg); }
-  .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg-glow); }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   @media (max-width: 560px) {
     .card {
       top: auto;
-      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-      left: max(16px, env(safe-area-inset-left, 0px));
-      right: max(16px, env(safe-area-inset-right, 0px));
+      bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      left: max(12px, env(safe-area-inset-left, 0px));
+      right: max(12px, env(safe-area-inset-right, 0px));
       width: auto;
-      grid-template-columns: 1fr 1fr;
+      max-height: 50%;
       padding: 14px;
       gap: 12px;
     }
-    .card header, .card .actions { grid-column: 1 / -1; }
-    h1 { font-size: 1.35rem; }
+    .sub { display: none; }
+    h1 { font-size: 1.3rem; }
   }
 </style>
 
@@ -121,14 +164,25 @@
     <h1>Clover the Bunny</h1>
     <p class="sub">Drag to turn her around. Scroll or pinch to zoom.</p>
   </header>
+
   <div class="group">
     <span class="label">Fur</span>
     <div class="swatches" id="fur"></div>
   </div>
-  <div class="group">
-    <span class="label">Dress</span>
-    <div class="swatches" id="dress"></div>
-  </div>
+
+  <section class="closet" aria-labelledby="closet-title">
+    <div class="closet-head">
+      <h2 id="closet-title">Closet</h2>
+      <button class="link" id="surprise" type="button">Surprise me</button>
+    </div>
+    <div class="tabs" id="tabs" role="tablist" aria-label="Clothing type"></div>
+    <div class="chips" id="items" role="tabpanel"></div>
+    <div class="group">
+      <span class="label">Outfit color</span>
+      <div class="swatches" id="color"></div>
+    </div>
+  </section>
+
   <div class="actions">
     <button class="btn" id="spin" type="button" aria-pressed="true">Spin</button>
     <button class="btn" id="reset" type="button">Reset view</button>
@@ -140,19 +194,51 @@
 <script>
 (() => {
   const FURS = [
-    { name: "Chocolate", fur: 0x8a5a3b, muzzle: 0xf2e4d2 },
-    { name: "Caramel",   fur: 0xd8b07e, muzzle: 0xfbf1e2 },
-    { name: "Snow",      fur: 0xf1ede6, muzzle: 0xfffcf6 },
-    { name: "Grey",      fur: 0x9a9893, muzzle: 0xf0eee9 },
+    { id: "chocolate", name: "Chocolate", fur: 0x8a5a3b, muzzle: 0xf2e4d2 },
+    { id: "caramel",   name: "Caramel",   fur: 0xd8b07e, muzzle: 0xfbf1e2 },
+    { id: "snow",      name: "Snow",      fur: 0xf1ede6, muzzle: 0xfffcf6 },
+    { id: "grey",      name: "Grey",      fur: 0x9a9893, muzzle: 0xf0eee9 },
   ];
-  const DRESSES = [
-    { name: "Rose",  color: 0xd9667b },
-    { name: "Sky",   color: 0x6f9bd1 },
-    { name: "Sage",  color: 0x86a568 },
-    { name: "Plum",  color: 0x8c5f98 },
+  const COLORS = [
+    { id: "rose",   name: "Rose",   color: 0xd9667b },
+    { id: "sky",    name: "Sky",    color: 0x6f9bd1 },
+    { id: "sage",   name: "Sage",   color: 0x86a568 },
+    { id: "plum",   name: "Plum",   color: 0x8c5f98 },
+    { id: "butter", name: "Butter", color: 0xeccd6e },
+    { id: "denim",  name: "Denim",  color: 0x46618c },
   ];
+  const CLOSET = [
+    { slot: "outfit", tab: "Outfit", items: [
+      { id: "apron", name: "Apron dress" },
+      { id: "party", name: "Party dress" },
+      { id: "overalls", name: "Overalls" },
+      { id: "nightgown", name: "Nightgown" },
+    ] },
+    { slot: "hat", tab: "Hat", items: [
+      { id: "none", name: "No hat" },
+      { id: "straw", name: "Straw hat" },
+      { id: "bow", name: "Ear bow" },
+      { id: "flowers", name: "Flower crown" },
+      { id: "beret", name: "Beret" },
+    ] },
+    { slot: "extra", tab: "Extras", items: [
+      { id: "none", name: "Nothing" },
+      { id: "scarf", name: "Scarf" },
+      { id: "bag", name: "Shoulder bag" },
+      { id: "glasses", name: "Glasses" },
+    ] },
+    { slot: "shoes", tab: "Shoes", items: [
+      { id: "none", name: "Bare paws" },
+      { id: "maryjanes", name: "Mary Janes" },
+      { id: "boots", name: "Rain boots" },
+    ] },
+  ];
+  const DEFAULTS = { fur: "chocolate", color: "rose", outfit: "apron", hat: "none", extra: "none", shoes: "none" };
+  const STORE_KEY = "clover-closet";
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const PI = Math.PI;
 
+  // ---------- Scene ----------
   const stage = document.getElementById("stage");
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -198,12 +284,13 @@
     new THREE.CircleGeometry(4, 64),
     new THREE.ShadowMaterial({ opacity: 0.18 })
   );
-  ground.rotation.x = -Math.PI / 2;
+  ground.rotation.x = -PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
 
+  // ---------- Materials ----------
   // Fine noise as a bump map gives the matte, flocked look of the real figures.
-  function flockTexture() {
+  function noiseTexture(repeat) {
     const c = document.createElement("canvas");
     c.width = c.height = 256;
     const g = c.getContext("2d");
@@ -216,93 +303,85 @@
     g.putImageData(img, 0, 0);
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(6, 6);
+    t.repeat.set(repeat, repeat);
     return t;
   }
-  const flock = flockTexture();
-  const felt = (color) => new THREE.MeshStandardMaterial({
-    color, roughness: 1, metalness: 0, bumpMap: flock, bumpScale: 0.006,
+  const flock = noiseTexture(6);
+  const weave = noiseTexture(14);
+  const felt = (color, bump = 0.006, map = flock) => new THREE.MeshStandardMaterial({
+    color, roughness: 1, metalness: 0, bumpMap: map, bumpScale: bump,
   });
+  const plastic = (color, roughness, extra = {}) =>
+    new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, ...extra });
 
   const mat = {
     fur: felt(FURS[0].fur),
     muzzle: felt(FURS[0].muzzle),
     earInner: felt(0xf0a9b4),
-    nose: new THREE.MeshStandardMaterial({ color: 0xe0788c, roughness: 0.45 }),
-    eye: new THREE.MeshStandardMaterial({ color: 0x120c0a, roughness: 0.12, metalness: 0.1 }),
+    nose: plastic(0xe0788c, 0.45),
+    eye: plastic(0x120c0a, 0.12),
     glint: new THREE.MeshBasicMaterial({ color: 0xffffff }),
-    dress: new THREE.MeshStandardMaterial({ color: DRESSES[0].color, roughness: 0.85, side: THREE.DoubleSide }),
-    apron: new THREE.MeshStandardMaterial({ color: 0xf1e9dc, roughness: 0.95, side: THREE.DoubleSide }),
-    trim: new THREE.MeshStandardMaterial({ color: 0xfbf7f0, roughness: 0.9 }),
+    dress: plastic(COLORS[0].color, 0.85, { side: THREE.DoubleSide }),
+    apron: plastic(0xf1e9dc, 0.95, { side: THREE.DoubleSide }),
+    trim: plastic(0xfbf7f0, 0.9),
+    ribbon: plastic(0xc23b4e, 0.55),
+    button: plastic(0xf2c94c, 0.35),
+    straw: felt(0xe0c07a, 0.02, weave),
+    beret: felt(0xb2384a, 0.01),
+    leaf: plastic(0x6b9a4b, 0.7),
+    petalPink: plastic(0xf4a6c0, 0.7),
+    petalWhite: plastic(0xfffaf2, 0.7),
+    petalLilac: plastic(0xc7a6f0, 0.7),
+    knit: felt(0xdba543, 0.02, weave),
+    bag: plastic(0xa8744a, 0.7),
+    bagFlap: plastic(0x84532f, 0.7),
+    frame: plastic(0x3b2a22, 0.35),
+    lens: plastic(0xdff0ff, 0.05, { transparent: true, opacity: 0.22 }),
+    patent: plastic(0x7a1f2b, 0.22),
+    boot: plastic(0xf2c230, 0.3),
   };
-  [mat.fur, mat.muzzle, mat.earInner, mat.nose, mat.dress, mat.apron, mat.trim].forEach((m) => m.color.convertSRGBToLinear());
+  Object.values(mat).forEach((m) => m.color.convertSRGBToLinear());
 
+  // ---------- Mesh helpers ----------
   const sphere = new THREE.SphereGeometry(1, 48, 32);
-  function blob(material, [x, y, z], [sx, sy, sz], parent = bunny) {
-    const m = new THREE.Mesh(sphere, material);
+  function add(geo, material, parent, [x, y, z] = [0, 0, 0], [rx, ry, rz] = [0, 0, 0], [sx, sy, sz] = [1, 1, 1]) {
+    const m = new THREE.Mesh(geo, material);
     m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
     m.scale.set(sx, sy, sz);
     m.castShadow = true;
     m.receiveShadow = true;
     parent.add(m);
     return m;
   }
+  const blob = (material, pos, scale, parent, rot) => add(sphere, material, parent, pos, rot, scale);
+  const torus = (r, tube) => new THREE.TorusGeometry(r, tube, 14, 72);
+  const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+  const lathe = (profile, ...rest) =>
+    new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), ...rest);
 
+  // ---------- The bunny ----------
   const bunny = new THREE.Group();
   scene.add(bunny);
 
-  // Feet and legs
   for (const s of [-1, 1]) {
-    blob(mat.fur, [s * 0.17, 0.1, 0.1], [0.17, 0.11, 0.25]);
-    blob(mat.fur, [s * 0.16, 0.3, 0], [0.16, 0.26, 0.16]);
+    blob(mat.fur, [s * 0.17, 0.1, 0.1], [0.17, 0.11, 0.25], bunny);
+    blob(mat.fur, [s * 0.16, 0.3, 0], [0.16, 0.26, 0.16], bunny);
   }
 
-  // Skirt: a lathed bell flaring out to the hem.
-  const skirtProfile = [
-    [0.30, 1.20], [0.33, 1.05], [0.40, 0.88], [0.49, 0.66], [0.56, 0.48], [0.59, 0.41], [0.57, 0.38],
-  ].map(([r, y]) => new THREE.Vector2(r, y));
-  const skirt = new THREE.Mesh(new THREE.LatheGeometry(skirtProfile, 64), mat.dress);
-  skirt.castShadow = skirt.receiveShadow = true;
-  bunny.add(skirt);
-
-  // Hem trim
-  const hem = new THREE.Mesh(new THREE.TorusGeometry(0.575, 0.022, 12, 80), mat.trim);
-  hem.rotation.x = Math.PI / 2;
-  hem.position.y = 0.395;
-  hem.castShadow = true;
-  bunny.add(hem);
-
-  // Apron: the front slice of a slightly larger lathe, so it sits on the skirt.
-  const apronProfile = skirtProfile.slice(1, 5).map((v) => new THREE.Vector2(v.x + 0.014, v.y));
-  const apron = new THREE.Mesh(new THREE.LatheGeometry(apronProfile, 32, -0.75, 1.5), mat.apron);
-  apron.castShadow = true;
-  bunny.add(apron);
-
-  // Bodice, puffed sleeves and collar
-  blob(mat.dress, [0, 1.13, 0], [0.35, 0.34, 0.31]);
-  for (const s of [-1, 1]) blob(mat.dress, [s * 0.32, 1.2, 0], [0.15, 0.14, 0.15]);
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.06, 16, 48), mat.trim);
-  collar.rotation.x = Math.PI / 2;
-  collar.scale.set(1, 1, 0.55);
-  collar.position.y = 1.4;
-  collar.castShadow = true;
-  bunny.add(collar);
-
   // Arms hang slightly forward and out, ending in round paws.
-  for (const s of [-1, 1]) {
+  const arms = [-1, 1].map((s) => {
     const arm = new THREE.Group();
     arm.position.set(s * 0.33, 1.2, 0.02);
-    arm.rotation.z = s * 0.32;
-    arm.rotation.x = -0.18;
+    arm.rotation.set(-0.18, 0, s * 0.32);
     bunny.add(arm);
     blob(mat.fur, [0, -0.25, 0], [0.1, 0.26, 0.1], arm);
     blob(mat.fur, [0, -0.47, 0.01], [0.11, 0.1, 0.1], arm);
-  }
+    return arm;
+  });
 
-  // Tail
-  blob(mat.muzzle, [0, 0.66, -0.52], [0.13, 0.13, 0.13]);
+  const tail = blob(mat.muzzle, [0, 0.66, -0.52], [0.13, 0.13, 0.13], bunny);
 
-  // Head
   const head = new THREE.Group();
   head.position.set(0, 1.78, 0);
   bunny.add(head);
@@ -310,50 +389,285 @@
   blob(mat.muzzle, [0, -0.13, 0.43], [0.27, 0.18, 0.18], head);
   for (const s of [-1, 1]) blob(mat.muzzle, [s * 0.11, -0.16, 0.44], [0.15, 0.13, 0.14], head);
   blob(mat.nose, [0, -0.04, 0.605], [0.055, 0.04, 0.035], head);
-
   for (const s of [-1, 1]) {
     blob(mat.eye, [s * 0.21, 0.07, 0.49], [0.065, 0.07, 0.04], head);
-    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 8), mat.glint);
-    glint.position.set(s * 0.21 + 0.022, 0.1, 0.527);
-    head.add(glint);
+    add(new THREE.SphereGeometry(0.016, 12, 8), mat.glint, head, [s * 0.21 + 0.022, 0.1, 0.527]);
   }
 
   // Ears pivot at their base so they can twitch.
-  const ears = [];
-  for (const s of [-1, 1]) {
+  const ears = [-1, 1].map((s) => {
     const ear = new THREE.Group();
     ear.position.set(s * 0.19, 0.4, -0.06);
     ear.rotation.set(-0.12, 0, -s * 0.14);
     head.add(ear);
     blob(mat.fur, [0, 0.42, 0], [0.15, 0.48, 0.075], ear);
     blob(mat.earInner, [0, 0.4, 0.048], [0.085, 0.36, 0.035], ear);
-    ears.push({ group: ear, side: s, base: ear.rotation.z });
+    return { group: ear, side: s, base: ear.rotation.z };
+  });
+
+  // ---------- Closet ----------
+  // Every wearable piece is a group tagged with its slot and item id; dressing toggles visibility.
+  const wardrobe = { outfit: {}, hat: {}, extra: {}, shoes: {} };
+  const tailSpots = {};
+  function piece(slot, id, parent = bunny) {
+    const g = new THREE.Group();
+    parent.add(g);
+    (wardrobe[slot][id] ||= []).push(g);
+    return g;
+  }
+  const bodice = (g, m) => blob(m, [0, 1.13, 0], [0.35, 0.34, 0.31], g);
+  const puffSleeves = (g, m, size = 0.15) => {
+    for (const s of [-1, 1]) blob(m, [s * 0.32, 1.2, 0], [size, size * 0.93, size], g);
+  };
+  const collar = (g, r = 0.2, tube = 0.06) =>
+    add(torus(r, tube), mat.trim, g, [0, 1.4, 0], [PI / 2, 0, 0], [1, 1, 0.55]);
+
+  // Apron dress
+  {
+    const SKIRT = [[0.30, 1.20], [0.33, 1.05], [0.40, 0.88], [0.49, 0.66], [0.56, 0.48], [0.59, 0.41], [0.57, 0.38]];
+    const g = piece("outfit", "apron");
+    add(lathe(SKIRT, 64), mat.dress, g);
+    add(torus(0.575, 0.022), mat.trim, g, [0, 0.395, 0], [PI / 2, 0, 0]);
+    const APRON = SKIRT.slice(1, 5).map(([r, y]) => [r + 0.014, y]);
+    add(lathe(APRON, 32, -0.75, 1.5), mat.apron, g);
+    bodice(g, mat.dress);
+    puffSleeves(g, mat.dress);
+    collar(g);
+    tailSpots.apron = [0.66, -0.52];
   }
 
-  // Swatches
-  function buildSwatches(el, items, colorOf, onPick) {
-    items.forEach((item, i) => {
+  // Party dress: fuller skirt, ruffled hem, sash with a bow at the back.
+  {
+    const SKIRT = [[0.30, 1.20], [0.34, 1.02], [0.44, 0.82], [0.56, 0.60], [0.64, 0.44], [0.66, 0.38], [0.63, 0.35]];
+    const g = piece("outfit", "party");
+    add(lathe(SKIRT, 64), mat.dress, g);
+    add(torus(0.645, 0.04), mat.trim, g, [0, 0.365, 0], [PI / 2, 0, 0]);
+    add(torus(0.345, 0.04), mat.ribbon, g, [0, 0.99, 0], [PI / 2, 0, 0]);
+    for (const s of [-1, 1]) {
+      blob(mat.ribbon, [s * 0.1, 0.99, -0.4], [0.11, 0.075, 0.04], g, [0, 0, s * 0.35]);
+      blob(mat.ribbon, [s * 0.05, 0.86, -0.4], [0.035, 0.12, 0.02], g, [0, 0, s * 0.2]);
+    }
+    blob(mat.ribbon, [0, 0.99, -0.41], [0.045, 0.045, 0.04], g);
+    bodice(g, mat.dress);
+    puffSleeves(g, mat.dress, 0.16);
+    collar(g, 0.21, 0.065);
+    tailSpots.party = [0.66, -0.57];
+  }
+
+  // Overalls over a white shirt.
+  {
+    const g = piece("outfit", "overalls");
+    bodice(g, mat.trim);
+    puffSleeves(g, mat.trim, 0.14);
+    collar(g, 0.2, 0.05);
+    blob(mat.dress, [0, 0.8, 0], [0.37, 0.3, 0.32], g);
+    for (const s of [-1, 1]) {
+      blob(mat.dress, [s * 0.16, 0.42, 0], [0.175, 0.26, 0.175], g);
+      add(torus(0.16, 0.03), mat.dress, g, [s * 0.16, 0.22, 0], [PI / 2, 0, 0]);
+      add(box(0.06, 0.2, 0.03), mat.dress, g, [s * 0.1, 1.28, 0.25], [-0.55, 0, 0]);
+      add(new THREE.SphereGeometry(0.026, 16, 12), mat.button, g, [s * 0.1, 1.2, 0.315]);
+    }
+    add(box(0.3, 0.28, 0.05), mat.dress, g, [0, 1.07, 0.29]);
+    add(box(0.12, 0.08, 0.012), mat.apron, g, [0, 1.04, 0.318]);
+    tailSpots.overalls = [0.74, -0.34];
+  }
+
+  // Nightgown: floor-length with long sleeves and a ruffled collar.
+  {
+    const SKIRT = [[0.30, 1.20], [0.34, 1.00], [0.42, 0.78], [0.50, 0.55], [0.56, 0.34], [0.60, 0.24], [0.58, 0.22]];
+    const g = piece("outfit", "nightgown");
+    add(lathe(SKIRT, 64), mat.dress, g);
+    add(torus(0.59, 0.035), mat.trim, g, [0, 0.235, 0], [PI / 2, 0, 0]);
+    bodice(g, mat.dress);
+    puffSleeves(g, mat.dress, 0.14);
+    collar(g, 0.22, 0.07);
+    blob(mat.ribbon, [0, 1.33, 0.29], [0.06, 0.035, 0.025], g);
+    for (const arm of arms) {
+      const sleeve = piece("outfit", "nightgown", arm);
+      blob(mat.dress, [0, -0.2, 0], [0.125, 0.23, 0.125], sleeve);
+      add(torus(0.1, 0.025), mat.trim, sleeve, [0, -0.4, 0], [PI / 2, 0, 0]);
+    }
+    tailSpots.nightgown = [0.66, -0.5];
+  }
+
+  // Hats live on the head (local coords: head radii 0.61 × 0.54 × 0.56). Ears poke through, like the real toys.
+  {
+    const g = piece("hat", "straw", head);
+    g.rotation.set(-0.08, 0, 0.08);
+    add(new THREE.CylinderGeometry(0.62, 0.62, 0.025, 64), mat.straw, g, [0, 0.37, 0]);
+    add(new THREE.CylinderGeometry(0.32, 0.36, 0.22, 48), mat.straw, g, [0, 0.5, 0]);
+    add(new THREE.CylinderGeometry(0.357, 0.366, 0.06, 48), mat.ribbon, g, [0, 0.42, 0]);
+  }
+  {
+    const g = piece("hat", "bow", head);
+    for (const s of [-1, 1]) blob(mat.ribbon, [0.22 + s * 0.1, 0.47, 0.06], [0.1, 0.065, 0.035], g, [0, 0, s * 0.3]);
+    blob(mat.ribbon, [0.22, 0.47, 0.075], [0.045, 0.045, 0.04], g);
+  }
+  {
+    const g = piece("hat", "flowers", head);
+    g.rotation.x = 0.12;
+    add(torus(0.47, 0.025), mat.leaf, g, [0, 0.3, 0], [PI / 2, 0, 0], [1.085, 1, 1]);
+    const petals = [mat.petalPink, mat.petalWhite, mat.petalLilac];
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * PI * 2;
+      const x = Math.cos(a) * 0.51, z = Math.sin(a) * 0.47;
+      blob(petals[i % 3], [x, 0.31, z], [0.06, 0.045, 0.06], g);
+      blob(mat.button, [x * 1.04, 0.33, z * 1.04], [0.022, 0.022, 0.022], g);
+      blob(mat.leaf, [Math.cos(a + 0.22) * 0.52, 0.29, Math.sin(a + 0.22) * 0.48], [0.04, 0.015, 0.025], g, [0, -a, 0]);
+    }
+  }
+  {
+    const g = piece("hat", "beret", head);
+    blob(mat.beret, [-0.08, 0.46, -0.02], [0.5, 0.13, 0.47], g, [0.05, 0, 0.22]);
+    add(new THREE.CylinderGeometry(0.02, 0.025, 0.07, 12), mat.beret, g, [-0.11, 0.6, -0.02], [0, 0, 0.22]);
+  }
+
+  // Extras
+  {
+    const g = piece("extra", "scarf");
+    add(torus(0.23, 0.075), mat.knit, g, [0, 1.4, 0], [PI / 2, 0, 0], [1, 1, 0.6]);
+    blob(mat.knit, [0.13, 1.21, 0.28], [0.075, 0.17, 0.04], g, [0.25, 0, -0.18]);
+    blob(mat.knit, [0.05, 1.24, 0.29], [0.07, 0.15, 0.04], g, [0.25, 0, 0.12]);
+  }
+  {
+    const g = piece("extra", "bag");
+    const strap = new THREE.Group();
+    strap.position.set(0, 1.05, 0);
+    strap.rotation.z = 0.55;
+    g.add(strap);
+    add(torus(0.4, 0.016), mat.bag, strap, [0, 0, 0], [0, PI / 2, 0]);
+    const purse = new THREE.Group();
+    purse.position.set(0.37, 0.72, 0.34);
+    purse.rotation.y = 0.75;
+    g.add(purse);
+    add(box(0.22, 0.17, 0.08), mat.bag, purse);
+    add(box(0.225, 0.07, 0.085), mat.bagFlap, purse, [0, 0.055, 0.003]);
+    add(new THREE.SphereGeometry(0.018, 12, 8), mat.button, purse, [0, 0.02, 0.05]);
+  }
+  {
+    const g = piece("extra", "glasses", head);
+    for (const s of [-1, 1]) {
+      add(torus(0.09, 0.013), mat.frame, g, [s * 0.21, 0.07, 0.555]);
+      add(new THREE.CircleGeometry(0.09, 32), mat.lens, g, [s * 0.21, 0.07, 0.553]);
+      add(box(0.02, 0.02, 0.32), mat.frame, g, [s * 0.335, 0.08, 0.38], [0, s * -0.55, 0]);
+    }
+    add(new THREE.CylinderGeometry(0.012, 0.012, 0.25, 8), mat.frame, g, [0, 0.1, 0.565], [0, 0, PI / 2]);
+  }
+
+  // Shoes
+  for (const s of [-1, 1]) {
+    const mj = piece("shoes", "maryjanes");
+    blob(mat.patent, [s * 0.17, 0.095, 0.11], [0.185, 0.105, 0.265], mj);
+    blob(mat.ribbon, [s * 0.17, 0.17, 0.25], [0.04, 0.025, 0.02], mj);
+
+    const boot = piece("shoes", "boots");
+    blob(mat.boot, [s * 0.17, 0.095, 0.11], [0.185, 0.105, 0.265], boot);
+    add(new THREE.CylinderGeometry(0.19, 0.18, 0.32, 32), mat.boot, boot, [s * 0.16, 0.3, 0]);
+    add(torus(0.19, 0.022), mat.boot, boot, [s * 0.16, 0.46, 0], [PI / 2, 0, 0]);
+  }
+
+  // ---------- State ----------
+  function loadState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+      return { ...DEFAULTS, ...saved };
+    } catch { return { ...DEFAULTS }; }
+  }
+  function saveState() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {}
+  }
+  const state = loadState();
+  const setColor = (m, hex) => m.color.setHex(hex).convertSRGBToLinear();
+
+  function dress() {
+    const fur = FURS.find((f) => f.id === state.fur) || FURS[0];
+    setColor(mat.fur, fur.fur);
+    setColor(mat.muzzle, fur.muzzle);
+    setColor(mat.dress, (COLORS.find((c) => c.id === state.color) || COLORS[0]).color);
+    for (const [slot, items] of Object.entries(wardrobe)) {
+      for (const [id, groups] of Object.entries(items)) groups.forEach((g) => { g.visible = state[slot] === id; });
+    }
+    const [ty, tz] = tailSpots[state.outfit] || tailSpots.apron;
+    tail.position.set(0, ty, tz);
+    syncUI();
+    saveState();
+  }
+
+  // ---------- UI ----------
+  const hex = (n) => "#" + n.toString(16).padStart(6, "0");
+  function swatches(el, list, colorOf, key) {
+    for (const item of list) {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "swatch";
-      b.id = `${el.id}-${item.name.toLowerCase()}`;
-      b.style.setProperty("--c", "#" + colorOf(item).toString(16).padStart(6, "0"));
+      b.id = `${key}-${item.id}`;
+      b.dataset.value = item.id;
+      b.style.setProperty("--c", hex(colorOf(item)));
       b.setAttribute("aria-label", item.name);
       b.title = item.name;
-      b.setAttribute("aria-pressed", String(i === 0));
-      b.addEventListener("click", () => {
-        el.querySelectorAll(".swatch").forEach((s) => s.setAttribute("aria-pressed", String(s === b)));
-        onPick(item);
-      });
+      b.addEventListener("click", () => { state[key] = item.id; dress(); });
       el.appendChild(b);
-    });
+    }
   }
-  const setColor = (m, hex) => m.color.setHex(hex).convertSRGBToLinear();
-  buildSwatches(document.getElementById("fur"), FURS, (f) => f.fur, (f) => {
-    setColor(mat.fur, f.fur);
-    setColor(mat.muzzle, f.muzzle);
+  swatches(document.getElementById("fur"), FURS, (f) => f.fur, "fur");
+  swatches(document.getElementById("color"), COLORS, (c) => c.color, "color");
+
+  const tabsEl = document.getElementById("tabs");
+  const itemsEl = document.getElementById("items");
+  let activeTab = CLOSET[0].slot;
+
+  for (const cat of CLOSET) {
+    const t = document.createElement("button");
+    t.type = "button";
+    t.className = "tab";
+    t.id = `tab-${cat.slot}`;
+    t.setAttribute("role", "tab");
+    t.textContent = cat.tab;
+    t.addEventListener("click", () => { activeTab = cat.slot; renderItems(); syncUI(); });
+    tabsEl.appendChild(t);
+  }
+  tabsEl.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    const i = CLOSET.findIndex((c) => c.slot === activeTab);
+    const next = CLOSET[(i + (e.key === "ArrowRight" ? 1 : CLOSET.length - 1)) % CLOSET.length];
+    activeTab = next.slot;
+    renderItems();
+    syncUI();
+    document.getElementById(`tab-${next.slot}`).focus();
   });
-  buildSwatches(document.getElementById("dress"), DRESSES, (d) => d.color, (d) => setColor(mat.dress, d.color));
+
+  function renderItems() {
+    const cat = CLOSET.find((c) => c.slot === activeTab);
+    itemsEl.setAttribute("aria-labelledby", `tab-${cat.slot}`);
+    itemsEl.replaceChildren(...cat.items.map((item) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip";
+      b.id = `item-${cat.slot}-${item.id}`;
+      b.dataset.value = item.id;
+      b.textContent = item.name;
+      b.addEventListener("click", () => { state[cat.slot] = item.id; dress(); });
+      return b;
+    }));
+  }
+
+  function syncUI() {
+    document.querySelectorAll("#fur .swatch").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state.fur)));
+    document.querySelectorAll("#color .swatch").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state.color)));
+    tabsEl.querySelectorAll(".tab").forEach((t) => {
+      const on = t.id === `tab-${activeTab}`;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+    });
+    itemsEl.querySelectorAll(".chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.value === state[activeTab])));
+  }
+
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  document.getElementById("surprise").addEventListener("click", () => {
+    for (const cat of CLOSET) state[cat.slot] = pick(cat.items).id;
+    state.color = pick(COLORS).id;
+    dress();
+  });
 
   const spinBtn = document.getElementById("spin");
   spinBtn.setAttribute("aria-pressed", String(controls.autoRotate));
@@ -367,20 +681,28 @@
     controls.update();
   });
 
+  renderItems();
+  dress();
+
+  // ---------- Resize: keep the bunny clear of the card ----------
   function resize() {
     const w = stage.clientWidth, h = stage.clientHeight;
     renderer.setSize(w, h, false);
     renderer.domElement.style.width = w + "px";
     renderer.domElement.style.height = h + "px";
     camera.aspect = w / h;
-    // Pull back on narrow screens so the whole figure stays in frame.
-    camera.zoom = Math.min(1, (w / h) * 1.15);
+    const narrow = w <= 560;
+    camera.zoom = narrow ? Math.min(1, (w / h) * 1.6) : Math.min(1, (w / h) * 1.15);
+    // Shift the picture away from the card: right on desktop, up on phones.
+    if (narrow) camera.setViewOffset(w, h, 0, h * 0.2, w, h);
+    else if (w > 900) camera.setViewOffset(w, h, -160, 0, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }
   addEventListener("resize", resize);
   resize();
 
-  // Idle life: gentle breathing, a head tilt, and an occasional ear twitch.
+  // ---------- Idle life: gentle breathing, a head tilt, an occasional ear twitch ----------
   const clock = new THREE.Clock();
   let nextTwitch = 2;
   let twitch = null;
@@ -392,14 +714,14 @@
       head.rotation.z = Math.sin(t * 0.7) * 0.04;
       head.rotation.x = Math.sin(t * 0.5) * 0.03;
       if (t > nextTwitch && !twitch) {
-        twitch = { ear: ears[Math.random() < 0.5 ? 0 : 1], start: t };
+        twitch = { ear: pick(ears), start: t };
         nextTwitch = t + 2.5 + Math.random() * 3;
       }
       if (twitch) {
-        const p = (t - twitch.start) / 0.45;
+        const p = Math.min((t - twitch.start) / 0.45, 1);
         const { group, side, base } = twitch.ear;
-        group.rotation.z = base - side * Math.sin(Math.min(p, 1) * Math.PI * 2) * 0.18 * (1 - Math.min(p, 1));
-        if (p >= 1) { group.rotation.z = base; twitch = null; }
+        group.rotation.z = base - side * Math.sin(p * PI * 2) * 0.18 * (1 - p);
+        if (p >= 1) twitch = null;
       }
     }
     controls.update();
