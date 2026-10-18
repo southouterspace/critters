@@ -251,7 +251,7 @@
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
   const HOME = new THREE.Vector3(2.6, 2.3, 7.2);
-  const TARGET = new THREE.Vector3(0, 1.5, 0);
+  const TARGET = new THREE.Vector3(0, 1.6, 0);
   camera.position.copy(HOME);
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -312,11 +312,20 @@
   const felt = (color, bump = 0.006, map = flock) => new THREE.MeshStandardMaterial({
     color, roughness: 1, metalness: 0, bumpMap: map, bumpScale: bump,
   });
+  // Flocked velvet: fully matte with a soft sheen that lights up at grazing angles, like the toys' fuzzy coat.
+  const furMats = [];
+  const velvet = (color) => {
+    const m = new THREE.MeshPhysicalMaterial({
+      color, roughness: 1, metalness: 0, bumpMap: flock, bumpScale: 0.005, sheen: new THREE.Color(0x000000),
+    });
+    furMats.push(m);
+    return m;
+  };
   const plastic = (color, roughness, extra = {}) =>
     new THREE.MeshStandardMaterial({ color, roughness, metalness: 0, ...extra });
 
   const mat = {
-    fur: felt(FURS[0].fur),
+    fur: velvet(FURS[0].fur),
     muzzle: felt(FURS[0].muzzle),
     earInner: felt(0xf0a9b4),
     nose: plastic(0xe0788c, 0.45),
@@ -469,7 +478,7 @@
   }
   const smooth01 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   const furMaterial = () => {
-    const m = felt(0xffffff);
+    const m = velvet(0xffffff);
     m.vertexColors = true;
     return m;
   };
@@ -525,7 +534,9 @@
 
   // Head: round skull widening into full cheeks, a small snout, brow ridges, eye sockets, and a Y mouth.
   const head = new THREE.Group();
-  head.position.set(0, 1.76, 0);
+  // Real figures have a big head on a small body.
+  head.position.set(0, 1.8, 0);
+  head.scale.setScalar(1.15);
   bunny.add(head);
   const headParts = [];
   let EYE_Z = 0.42;
@@ -546,7 +557,7 @@
       ell(x, y, z, 0, -0.088, NZ - 0.004, 0.022, 0.026, 0.03), 0.025);
     // Eyes sit in rounded mounds with a lid rim, like the sculpted figure.
     const EZ = surfaceZ(skull, 0.19, 0.03);
-    const mound = (ax, y, z) => ell(ax, y, z, 0.19, 0.03, EZ - 0.045, 0.1, 0.1, 0.075);
+    const mound = (ax, y, z) => ell(ax, y, z, 0.19, 0.03, EZ - 0.05, 0.085, 0.085, 0.07);
     EYE_Z = EZ + 0.005;
     const socket = (ax, y, z) => ell(ax, y, z, 0.19, 0.03, EYE_Z, 0.074, 0.08, 0.05);
     // Y mouth: a short line down from the nose, then two arcs curling up into a smile.
@@ -569,7 +580,7 @@
     const muzzleMask = [], noseMask = [], mouthMask = [];
     for (let q = 0; q < P.length; q += 3) {
       const x = P[q], y = P[q + 1], z = P[q + 2], ax = Math.abs(x);
-      muzzleMask.push(smooth01(0.02, -0.02, ell(x, y, z, 0, -0.175, 0.38, 0.17, 0.115, 0.16)) * smooth01(0.18, 0.26, z));
+      muzzleMask.push(smooth01(0.02, -0.02, ell(x, y, z, 0, -0.17, 0.36, 0.215, 0.14, 0.2)) * smooth01(0.14, 0.24, z));
       noseMask.push(smooth01(0.012, 0.002, nose(x, y, z)));
       mouthMask.push(smooth01(0.02, 0.008, mouth(ax, y, z)));
     }
@@ -582,8 +593,8 @@
     } });
 
     for (const s of [-1, 1]) {
-      add(new THREE.SphereGeometry(0.064, 32, 20), mat.eye, head, [s * 0.19, 0.03, EYE_Z - 0.01]);
-      add(new THREE.SphereGeometry(0.014, 12, 8), mat.glint, head, [s * 0.19 + 0.02, 0.058, EYE_Z + 0.045]);
+      add(new THREE.SphereGeometry(0.052, 32, 20), mat.eye, head, [s * 0.19, 0.03, EYE_Z - 0.012]);
+      add(new THREE.SphereGeometry(0.012, 12, 8), mat.glint, head, [s * 0.19 + 0.017, 0.052, EYE_Z + 0.033]);
     }
   }
 
@@ -591,7 +602,8 @@
   const ears = [-1, 1].map((s) => {
     const ear = new THREE.Group();
     ear.position.set(s * 0.18, 0.3, -0.08);
-    ear.rotation.set(-0.3, 0, -s * 0.2);
+    ear.rotation.set(-0.2, 0, -s * 0.16);
+    ear.scale.set(1, 1.18, 1);
     head.add(ear);
     return { group: ear, side: s, base: ear.rotation.z };
   });
@@ -805,6 +817,8 @@
     const fur = FURS.find((f) => f.id === state.fur) || FURS[0];
     setColor(mat.fur, fur.fur);
     setColor(mat.muzzle, fur.muzzle);
+    const sheen = mat.fur.color.clone().lerp(new THREE.Color(1, 1, 1), 0.3);
+    furMats.forEach((m) => { m.sheen.copy(sheen); });
     paintFur();
     setColor(mat.dress, (COLORS.find((c) => c.id === state.color) || COLORS[0]).color);
     for (const [slot, items] of Object.entries(wardrobe)) {
