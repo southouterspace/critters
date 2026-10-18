@@ -213,6 +213,7 @@
       { id: "party", name: "Party dress" },
       { id: "overalls", name: "Overalls" },
       { id: "nightgown", name: "Nightgown" },
+      { id: "none", name: "Just fur" },
     ] },
     { slot: "hat", tab: "Hat", items: [
       { id: "none", name: "No hat" },
@@ -319,6 +320,7 @@
     muzzle: felt(FURS[0].muzzle),
     earInner: felt(0xf0a9b4),
     nose: plastic(0xe0788c, 0.45),
+    mouth: plastic(0x5a3a34, 0.6),
     eye: plastic(0x120c0a, 0.12),
     glint: new THREE.MeshBasicMaterial({ color: 0xffffff }),
     dress: plastic(COLORS[0].color, 0.85, { side: THREE.DoubleSide }),
@@ -364,10 +366,16 @@
   const bunny = new THREE.Group();
   scene.add(bunny);
 
-  for (const s of [-1, 1]) {
-    blob(mat.fur, [s * 0.17, 0.1, 0.1], [0.17, 0.11, 0.25], bunny);
-    blob(mat.fur, [s * 0.16, 0.3, 0], [0.16, 0.26, 0.16], bunny);
-  }
+  // Long feet that turn out a little, under rounded thighs. Shoes attach to the foot groups.
+  const feet = [-1, 1].map((s) => {
+    const foot = new THREE.Group();
+    foot.position.set(s * 0.17, 0, 0.12);
+    foot.rotation.y = s * 0.2;
+    bunny.add(foot);
+    blob(mat.fur, [0, 0.085, 0.02], [0.15, 0.09, 0.28], foot);
+    blob(mat.fur, [s * 0.16, 0.32, 0.01], [0.165, 0.24, 0.17], bunny);
+    return foot;
+  });
 
   // Arms hang slightly forward and out, ending in round paws.
   const arms = [-1, 1].map((s) => {
@@ -375,33 +383,40 @@
     arm.position.set(s * 0.33, 1.2, 0.02);
     arm.rotation.set(-0.18, 0, s * 0.32);
     bunny.add(arm);
-    blob(mat.fur, [0, -0.25, 0], [0.1, 0.26, 0.1], arm);
-    blob(mat.fur, [0, -0.47, 0.01], [0.11, 0.1, 0.1], arm);
+    blob(mat.fur, [0, -0.06, 0], [0.12, 0.13, 0.12], arm);
+    blob(mat.fur, [0, -0.25, 0], [0.095, 0.24, 0.095], arm);
+    blob(mat.fur, [0.01, -0.46, 0.02], [0.1, 0.09, 0.075], arm, [0, 0, s * 0.25]);
     return arm;
   });
 
   const tail = blob(mat.muzzle, [0, 0.66, -0.52], [0.13, 0.13, 0.13], bunny);
 
+  // Head proportions follow the real figure: a rounded skull that widens into full cheeks.
   const head = new THREE.Group();
-  head.position.set(0, 1.78, 0);
+  head.position.set(0, 1.75, 0);
   bunny.add(head);
-  blob(mat.fur, [0, 0, 0], [0.61, 0.54, 0.56], head);
-  blob(mat.muzzle, [0, -0.13, 0.43], [0.27, 0.18, 0.18], head);
-  for (const s of [-1, 1]) blob(mat.muzzle, [s * 0.11, -0.16, 0.44], [0.15, 0.13, 0.14], head);
-  blob(mat.nose, [0, -0.04, 0.605], [0.055, 0.04, 0.035], head);
+  blob(mat.fur, [0, 0, 0], [0.5, 0.45, 0.47], head);
+  blob(mat.fur, [0, -0.13, 0.04], [0.47, 0.3, 0.42], head);
   for (const s of [-1, 1]) {
-    blob(mat.eye, [s * 0.21, 0.07, 0.49], [0.065, 0.07, 0.04], head);
-    add(new THREE.SphereGeometry(0.016, 12, 8), mat.glint, head, [s * 0.21 + 0.022, 0.1, 0.527]);
+    blob(mat.muzzle, [s * 0.085, -0.14, 0.39], [0.12, 0.1, 0.1], head);
+    blob(mat.fur, [s * 0.2, 0.035, 0.405], [0.085, 0.075, 0.05], head);
+    blob(mat.eye, [s * 0.2, 0.03, 0.43], [0.055, 0.06, 0.035], head);
+    add(new THREE.SphereGeometry(0.014, 12, 8), mat.glint, head, [s * 0.2 + 0.018, 0.055, 0.462]);
   }
+  blob(mat.muzzle, [0, -0.21, 0.37], [0.09, 0.06, 0.07], head);
+  blob(mat.nose, [0, -0.075, 0.475], [0.048, 0.032, 0.03], head);
+  const mouthLine = new THREE.CylinderGeometry(0.007, 0.007, 1, 6);
+  add(mouthLine, mat.mouth, head, [0, -0.12, 0.475], [0, 0, 0], [1, 0.06, 1]);
+  for (const s of [-1, 1]) add(mouthLine, mat.mouth, head, [s * 0.025, -0.158, 0.465], [0, 0, s * 1.0], [1, 0.06, 1]);
 
-  // Ears pivot at their base so they can twitch.
+  // Short, broad ears in a V. They pivot at their base so they can twitch.
   const ears = [-1, 1].map((s) => {
     const ear = new THREE.Group();
-    ear.position.set(s * 0.19, 0.4, -0.06);
-    ear.rotation.set(-0.12, 0, -s * 0.14);
+    ear.position.set(s * 0.17, 0.33, -0.05);
+    ear.rotation.set(-0.15, 0, -s * 0.32);
     head.add(ear);
-    blob(mat.fur, [0, 0.42, 0], [0.15, 0.48, 0.075], ear);
-    blob(mat.earInner, [0, 0.4, 0.048], [0.085, 0.36, 0.035], ear);
+    blob(mat.fur, [0, 0.34, 0], [0.14, 0.36, 0.07], ear);
+    blob(mat.earInner, [0, 0.33, 0.05], [0.085, 0.27, 0.03], ear);
     return { group: ear, side: s, base: ear.rotation.z };
   });
 
@@ -462,7 +477,7 @@
     collar(g, 0.2, 0.05);
     blob(mat.dress, [0, 0.8, 0], [0.37, 0.3, 0.32], g);
     for (const s of [-1, 1]) {
-      blob(mat.dress, [s * 0.16, 0.42, 0], [0.175, 0.26, 0.175], g);
+      blob(mat.dress, [s * 0.16, 0.42, 0.01], [0.185, 0.26, 0.19], g);
       add(torus(0.16, 0.03), mat.dress, g, [s * 0.16, 0.22, 0], [PI / 2, 0, 0]);
       add(box(0.06, 0.2, 0.03), mat.dress, g, [s * 0.1, 1.28, 0.25], [-0.55, 0, 0]);
       add(new THREE.SphereGeometry(0.026, 16, 12), mat.button, g, [s * 0.1, 1.2, 0.315]);
@@ -490,36 +505,44 @@
     tailSpots.nightgown = [0.66, -0.5];
   }
 
-  // Hats live on the head (local coords: head radii 0.61 × 0.54 × 0.56). Ears poke through, like the real toys.
+  // Just fur: the bare figure, with a pear-shaped body.
+  {
+    const g = piece("outfit", "none");
+    blob(mat.fur, [0, 0.9, 0], [0.38, 0.52, 0.34], g);
+    blob(mat.fur, [0, 1.35, 0], [0.2, 0.12, 0.18], g);
+    tailSpots.none = [0.72, -0.34];
+  }
+
+  // Hats live on the head (local coords: head radii 0.5 × 0.45 × 0.47). Ears poke through, like the real toys.
   {
     const g = piece("hat", "straw", head);
     g.rotation.set(-0.08, 0, 0.08);
-    add(new THREE.CylinderGeometry(0.62, 0.62, 0.025, 64), mat.straw, g, [0, 0.37, 0]);
-    add(new THREE.CylinderGeometry(0.32, 0.36, 0.22, 48), mat.straw, g, [0, 0.5, 0]);
-    add(new THREE.CylinderGeometry(0.357, 0.366, 0.06, 48), mat.ribbon, g, [0, 0.42, 0]);
+    add(new THREE.CylinderGeometry(0.55, 0.55, 0.025, 64), mat.straw, g, [0, 0.3, 0]);
+    add(new THREE.CylinderGeometry(0.27, 0.3, 0.2, 48), mat.straw, g, [0, 0.41, 0]);
+    add(new THREE.CylinderGeometry(0.297, 0.306, 0.055, 48), mat.ribbon, g, [0, 0.34, 0]);
   }
   {
     const g = piece("hat", "bow", head);
-    for (const s of [-1, 1]) blob(mat.ribbon, [0.22 + s * 0.1, 0.47, 0.06], [0.1, 0.065, 0.035], g, [0, 0, s * 0.3]);
-    blob(mat.ribbon, [0.22, 0.47, 0.075], [0.045, 0.045, 0.04], g);
+    for (const s of [-1, 1]) blob(mat.ribbon, [0.21 + s * 0.09, 0.37, 0.08], [0.09, 0.06, 0.035], g, [0, 0, s * 0.3]);
+    blob(mat.ribbon, [0.21, 0.37, 0.095], [0.04, 0.04, 0.035], g);
   }
   {
     const g = piece("hat", "flowers", head);
     g.rotation.x = 0.12;
-    add(torus(0.47, 0.025), mat.leaf, g, [0, 0.3, 0], [PI / 2, 0, 0], [1.085, 1, 1]);
+    add(torus(0.39, 0.022), mat.leaf, g, [0, 0.25, 0], [PI / 2, 0, 0], [1.07, 1, 1]);
     const petals = [mat.petalPink, mat.petalWhite, mat.petalLilac];
     for (let i = 0; i < 14; i++) {
       const a = (i / 14) * PI * 2;
-      const x = Math.cos(a) * 0.51, z = Math.sin(a) * 0.47;
-      blob(petals[i % 3], [x, 0.31, z], [0.06, 0.045, 0.06], g);
-      blob(mat.button, [x * 1.04, 0.33, z * 1.04], [0.022, 0.022, 0.022], g);
-      blob(mat.leaf, [Math.cos(a + 0.22) * 0.52, 0.29, Math.sin(a + 0.22) * 0.48], [0.04, 0.015, 0.025], g, [0, -a, 0]);
+      const x = Math.cos(a) * 0.42, z = Math.sin(a) * 0.39;
+      blob(petals[i % 3], [x, 0.26, z], [0.05, 0.04, 0.05], g);
+      blob(mat.button, [x * 1.04, 0.28, z * 1.04], [0.019, 0.019, 0.019], g);
+      blob(mat.leaf, [Math.cos(a + 0.22) * 0.43, 0.24, Math.sin(a + 0.22) * 0.4], [0.035, 0.013, 0.022], g, [0, -a, 0]);
     }
   }
   {
     const g = piece("hat", "beret", head);
-    blob(mat.beret, [-0.08, 0.46, -0.02], [0.5, 0.13, 0.47], g, [0.05, 0, 0.22]);
-    add(new THREE.CylinderGeometry(0.02, 0.025, 0.07, 12), mat.beret, g, [-0.11, 0.6, -0.02], [0, 0, 0.22]);
+    blob(mat.beret, [-0.06, 0.38, -0.02], [0.42, 0.11, 0.4], g, [0.05, 0, 0.22]);
+    add(new THREE.CylinderGeometry(0.018, 0.022, 0.06, 12), mat.beret, g, [-0.09, 0.5, -0.02], [0, 0, 0.22]);
   }
 
   // Extras
@@ -547,24 +570,24 @@
   {
     const g = piece("extra", "glasses", head);
     for (const s of [-1, 1]) {
-      add(torus(0.09, 0.013), mat.frame, g, [s * 0.21, 0.07, 0.555]);
-      add(new THREE.CircleGeometry(0.09, 32), mat.lens, g, [s * 0.21, 0.07, 0.553]);
-      add(box(0.02, 0.02, 0.32), mat.frame, g, [s * 0.335, 0.08, 0.38], [0, s * -0.55, 0]);
+      add(torus(0.08, 0.012), mat.frame, g, [s * 0.2, 0.03, 0.48]);
+      add(new THREE.CircleGeometry(0.08, 32), mat.lens, g, [s * 0.2, 0.03, 0.478]);
+      add(box(0.018, 0.018, 0.3), mat.frame, g, [s * 0.32, 0.04, 0.3], [0, s * -0.6, 0]);
     }
-    add(new THREE.CylinderGeometry(0.012, 0.012, 0.25, 8), mat.frame, g, [0, 0.1, 0.565], [0, 0, PI / 2]);
+    add(new THREE.CylinderGeometry(0.011, 0.011, 0.24, 8), mat.frame, g, [0, 0.05, 0.49], [0, 0, PI / 2]);
   }
 
   // Shoes
-  for (const s of [-1, 1]) {
-    const mj = piece("shoes", "maryjanes");
-    blob(mat.patent, [s * 0.17, 0.095, 0.11], [0.185, 0.105, 0.265], mj);
-    blob(mat.ribbon, [s * 0.17, 0.17, 0.25], [0.04, 0.025, 0.02], mj);
+  [-1, 1].forEach((s, i) => {
+    const mj = piece("shoes", "maryjanes", feet[i]);
+    blob(mat.patent, [0, 0.08, 0.025], [0.165, 0.095, 0.295], mj);
+    blob(mat.ribbon, [0, 0.15, 0.2], [0.04, 0.025, 0.02], mj);
 
     const boot = piece("shoes", "boots");
-    blob(mat.boot, [s * 0.17, 0.095, 0.11], [0.185, 0.105, 0.265], boot);
+    blob(mat.boot, [0, 0.08, 0.025], [0.165, 0.095, 0.295], piece("shoes", "boots", feet[i]));
     add(new THREE.CylinderGeometry(0.19, 0.18, 0.32, 32), mat.boot, boot, [s * 0.16, 0.3, 0]);
     add(torus(0.19, 0.022), mat.boot, boot, [s * 0.16, 0.46, 0], [PI / 2, 0, 0]);
-  }
+  });
 
   // ---------- State ----------
   function loadState() {
