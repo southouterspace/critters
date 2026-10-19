@@ -189,6 +189,7 @@
 
   <div class="actions">
     <button class="btn" id="spin" type="button" aria-pressed="true">Spin</button>
+    <button class="btn" id="walk" type="button" aria-pressed="false">Walk</button>
     <button class="btn" id="reset" type="button">Reset view</button>
   </div>
 </aside>
@@ -286,6 +287,7 @@
   Object.assign(key.shadow.camera, { left: -2, right: 2, top: 3.5, bottom: -1, near: 1, far: 15 });
   key.shadow.bias = -0.0005;
   scene.add(key);
+  scene.add(key.target);
   const fill = new THREE.DirectionalLight(0xdfe9ff, 0.35);
   fill.position.set(-4, 2, 2);
   scene.add(fill);
@@ -506,12 +508,19 @@
   const bunny = new THREE.Group();
   scene.add(bunny);
 
-  // Limb frames. Clothes and shoes attach to these groups, and the sculpt reads them too, so they always line up.
-  const feet = [-1, 1].map((s) => {
+  // Jointed limbs, like the real figures: legs pivot at the hip, arms at the shoulder.
+  // Clothes and shoes attach to these groups, and the sculpt reads them too, so they always line up.
+  const legs = [-1, 1].map((s) => {
+    const leg = new THREE.Group();
+    leg.position.set(s * 0.15, 0.58, 0.02);
+    bunny.add(leg);
+    return leg;
+  });
+  const feet = [-1, 1].map((s, i) => {
     const foot = new THREE.Group();
-    foot.position.set(s * 0.18, 0, 0.13);
+    foot.position.set(s * 0.03, -0.58, 0.11);
     foot.rotation.y = s * 0.2;
-    bunny.add(foot);
+    legs[i].add(foot);
     return foot;
   });
   const arms = [-1, 1].map((s) => {
@@ -521,34 +530,39 @@
     bunny.add(arm);
     return arm;
   });
+  const sculpt = (geo, parent) => {
+    const m = new THREE.Mesh(geo, mat.fur);
+    m.castShadow = m.receiveShadow = true;
+    parent.add(m);
+  };
 
-  // Body: pear-shaped torso with a forward belly, tapered arms with mitten paws, short legs, long feet.
-  {
-    const footLocal = feet.map(localizer);
-    const armLocal = arms.map(localizer);
-    const bodySDF = (x, y, z) => {
-      const ax = Math.abs(x);
-      let d = ell(x, y, z, 0, 0.92, 0, 0.35, 0.47, 0.31);
-      d = smin(d, ell(x, y, z, 0, 0.8, 0.07, 0.32, 0.34, 0.3), 0.12);
-      d = smin(d, ell(x, y, z, 0, 1.27, 0, 0.26, 0.18, 0.22), 0.1);
-      d = smin(d, limb(ax, y, z, [0.15, 0.58, 0.02], [0.17, 0.16, 0.05], 0.17, 0.115), 0.1);
-      for (let i = 0; i < 2; i++) {
-        const s = i ? 1 : -1;
-        if (x * s < -0.05) continue;
-        const [fx, fy, fz] = footLocal[i](x, y, z);
-        d = smin(d, ell(fx, fy, fz, 0, 0.08, 0.02, 0.13, 0.085, 0.25), 0.07);
-        const [lx, ly, lz] = armLocal[i](x, y, z);
-        let a = limb(lx, ly, lz, [0, 0.02, 0], [0, -0.38, 0.01], 0.095, 0.07);
-        a = smin(a, ell(lx, ly, lz, 0, -0.46, 0.015, 0.085, 0.095, 0.065), 0.05);
-        a = smin(a, ell(lx, ly, lz, -s * 0.055, -0.42, 0.05, 0.035, 0.05, 0.035), 0.03);
-        d = smin(d, a, 0.06);
-      }
-      return d;
-    };
-    const body = new THREE.Mesh(meshSDF(bodySDF, [-0.66, -0.02, -0.45], [0.66, 1.52, 0.55], 0.014), mat.fur);
-    body.castShadow = body.receiveShadow = true;
-    bunny.add(body);
-  }
+  // Body: pear-shaped torso with a forward belly.
+  sculpt(meshSDF((x, y, z) => {
+    let d = ell(x, y, z, 0, 0.92, 0, 0.35, 0.47, 0.31);
+    d = smin(d, ell(x, y, z, 0, 0.8, 0.07, 0.32, 0.34, 0.3), 0.12);
+    return smin(d, ell(x, y, z, 0, 1.27, 0, 0.26, 0.18, 0.22), 0.1);
+  }, [-0.4, 0.4, -0.36], [0.4, 1.5, 0.42], 0.014), bunny);
+
+  // Legs: short and thick, ending in long feet (leg-local coords, hip at the origin).
+  legs.forEach((leg, i) => {
+    const s = i ? 1 : -1;
+    const footLocal = localizer(feet[i]);
+    sculpt(meshSDF((x, y, z) => {
+      const [fx, fy, fz] = footLocal(x, y, z);
+      const d = limb(x, y, z, [0, 0.02, 0], [s * 0.02, -0.42, 0.03], 0.17, 0.115);
+      return smin(d, ell(fx, fy, fz, 0, 0.08, 0.02, 0.13, 0.085, 0.25), 0.07);
+    }, [-0.25, -0.62, -0.22], [0.25, 0.2, 0.45], 0.012), leg);
+  });
+
+  // Arms: tapered, with mitten paws and a small thumb (arm-local coords, shoulder at the origin).
+  arms.forEach((arm, i) => {
+    const s = i ? 1 : -1;
+    sculpt(meshSDF((x, y, z) => {
+      let a = limb(x, y, z, [0, 0.02, 0], [0, -0.38, 0.01], 0.095, 0.07);
+      a = smin(a, ell(x, y, z, 0, -0.46, 0.015, 0.085, 0.095, 0.065), 0.05);
+      return smin(a, ell(x, y, z, -s * 0.055, -0.42, 0.05, 0.035, 0.05, 0.035), 0.03);
+    }, [-0.16, -0.6, -0.14], [0.16, 0.14, 0.16], 0.01), arm);
+  });
 
   const tail = blob(mat.muzzle, [0, 0.66, -0.52], [0.13, 0.13, 0.13], bunny);
 
@@ -713,8 +727,9 @@
     collar(g, 0.2, 0.05);
     blob(mat.dress, [0, 0.78, 0.04], [0.4, 0.38, 0.37], g);
     for (const s of [-1, 1]) {
-      blob(mat.dress, [s * 0.16, 0.4, 0.03], [0.2, 0.3, 0.2], g);
-      add(torus(0.135, 0.03), mat.dress, g, [s * 0.17, 0.16, 0.05], [PI / 2, 0, 0]);
+      const pant = piece("outfit", "overalls", legs[s > 0 ? 1 : 0]);
+      blob(mat.dress, [s * 0.01, -0.18, 0.01], [0.2, 0.3, 0.2], pant);
+      add(torus(0.135, 0.03), mat.dress, pant, [s * 0.02, -0.42, 0.03], [PI / 2, 0, 0]);
       add(box(0.06, 0.2, 0.03), mat.dress, g, [s * 0.1, 1.28, 0.25], [-0.55, 0, 0]);
       add(new THREE.SphereGeometry(0.026, 16, 12), mat.button, g, [s * 0.1, 1.2, 0.315]);
     }
@@ -966,8 +981,9 @@
     spinBtn.setAttribute("aria-pressed", String(controls.autoRotate));
   });
   document.getElementById("reset").addEventListener("click", () => {
-    camera.position.copy(HOME);
-    controls.target.copy(TARGET);
+    const here = new THREE.Vector3(bunny.position.x, 0, bunny.position.z);
+    camera.position.copy(HOME).add(here);
+    controls.target.copy(TARGET).add(here);
     controls.update();
   });
 
@@ -992,13 +1008,67 @@
   addEventListener("resize", resize);
   resize();
 
+  // ---------- Walking: wander between random spots on the floor, sometimes stopping to look around ----------
+  const WALK_RADIUS = 1.6, WALK_SPEED = 0.5, TURN_RATE = 2.4;
+  const walk = { on: false, target: new THREE.Vector2(), pause: 0, phase: 0, amount: 0 };
+  function newWalkTarget() {
+    const a = Math.random() * PI * 2, r = Math.sqrt(Math.random()) * WALK_RADIUS;
+    walk.target.set(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const walkBtn = document.getElementById("walk");
+  walkBtn.addEventListener("click", () => {
+    walk.on = !walk.on;
+    walkBtn.setAttribute("aria-pressed", String(walk.on));
+    if (walk.on) { newWalkTarget(); walk.pause = 0; }
+  });
+  function stepWalk(dt) {
+    let moving = false;
+    if (walk.on) {
+      if (walk.pause > 0) walk.pause -= dt;
+      else {
+        const dx = walk.target.x - bunny.position.x, dz = walk.target.y - bunny.position.z;
+        if (Math.hypot(dx, dz) < 0.08) {
+          newWalkTarget();
+          if (Math.random() < 0.35) walk.pause = 0.8 + Math.random() * 1.5;
+        } else {
+          let turn = Math.atan2(dx, dz) - bunny.rotation.y;
+          turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+          bunny.rotation.y += Math.max(-TURN_RATE * dt, Math.min(TURN_RATE * dt, turn));
+          // Slow down while turning sharply so she doesn't moonwalk sideways.
+          const speed = WALK_SPEED * Math.max(0.15, Math.cos(turn));
+          bunny.position.x += Math.sin(bunny.rotation.y) * speed * dt;
+          bunny.position.z += Math.cos(bunny.rotation.y) * speed * dt;
+          moving = true;
+        }
+      }
+    }
+    // Ease the gait in and out so she settles back to standing when she stops.
+    walk.amount += ((moving ? 1 : 0) - walk.amount) * Math.min(1, dt * 6);
+    if (walk.amount > 0.01) walk.phase += dt * 7;
+    const swing = Math.sin(walk.phase) * walk.amount;
+    legs.forEach((leg, i) => { leg.rotation.x = (i ? -1 : 1) * swing * 0.38; });
+    arms.forEach((arm, i) => { arm.rotation.x = -0.15 + (i ? 1 : -1) * swing * 0.35; });
+    bunny.position.y = Math.abs(Math.sin(walk.phase)) * 0.035 * walk.amount;
+    bunny.rotation.z = Math.sin(walk.phase) * 0.04 * walk.amount;
+
+    // The camera and the shadow-casting light follow her around.
+    const k = Math.min(1, dt * 3);
+    const fx = (bunny.position.x - controls.target.x) * k, fz = (bunny.position.z - controls.target.z) * k;
+    controls.target.x += fx; controls.target.z += fz;
+    camera.position.x += fx; camera.position.z += fz;
+    key.position.set(bunny.position.x + 3, 6, bunny.position.z + 4);
+    key.target.position.set(bunny.position.x, 0, bunny.position.z);
+  }
+
   // ---------- Idle life: gentle breathing, a head tilt, an occasional ear twitch ----------
   const clock = new THREE.Clock();
   let nextTwitch = 2;
   let twitch = null;
   function animate() {
     requestAnimationFrame(animate);
-    const t = clock.getElapsedTime();
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
+    stepWalk(dt);
     if (!reduceMotion) {
       bunny.scale.y = 1 + Math.sin(t * 2) * 0.006;
       head.rotation.z = Math.sin(t * 0.7) * 0.04;
